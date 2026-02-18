@@ -1,0 +1,7 @@
+/* Global styles if any, mostly Tailwind used */
+@import "tailwindcss";
+
+body {
+  background-color: #111;
+  color: white;
+}
