@@ -9,9 +9,10 @@ const Row = ({ title, fetchFunction, isLargeRow = false }) => {
         async function fetchData() {
             try {
                 const request = await fetchFunction();
-                if (request && request.titles) {
-                    setMovies(request.titles);
-                } else if (request && Array.isArray(request)) {
+                // TMDB (and our mock) return { results: [...] }
+                if (request && request.results) {
+                    setMovies(request.results);
+                } else if (Array.isArray(request)) {
                     setMovies(request);
                 }
             } catch (error) {
@@ -21,9 +22,10 @@ const Row = ({ title, fetchFunction, isLargeRow = false }) => {
         fetchData();
     }, [fetchFunction, title]);
 
-    const getImageUrl = (id) => {
-        // Watchmode poster image pattern
-        return `https://cdn.watchmode.com/posters/0${id}_poster_w342.jpg`;
+    const getImageUrl = (path) => {
+        // TMDB Image CDN
+        if (!path) return "";
+        return `https://image.tmdb.org/t/p/w500${path}`;
     };
 
     const scroll = (offset) => {
@@ -33,8 +35,8 @@ const Row = ({ title, fetchFunction, isLargeRow = false }) => {
     }
 
     return (
-        <div className="text-white ml-5 relative group my-4">
-            <h2 className="text-xl font-bold mb-4">{title}</h2>
+        <div className="text-white ml-5 relative group my-8">
+            <h2 className="text-2xl font-bold mb-4 px-2">{title}</h2>
 
             <div className="relative group/row">
                 {/* Left Scroll Button */}
@@ -54,31 +56,28 @@ const Row = ({ title, fetchFunction, isLargeRow = false }) => {
                         movies.map(movie => (
                             <div
                                 key={movie.id}
-                                className={`flex-none relative transition-transform duration-300 hover:scale-110 cursor-pointer ${isLargeRow ? 'w-[180px]' : 'w-[160px]'} hover:z-10`}
+                                className={`flex-none relative transition-transform duration-300 hover:scale-110 cursor-pointer ${isLargeRow ? 'w-[200px]' : 'w-[180px]'} hover:z-10`}
                             >
                                 <img
-                                    className={`w-full rounded object-cover shadow-lg ${isLargeRow ? 'h-[270px]' : 'h-[240px]'}`}
-                                    src={getImageUrl(movie.id)}
+                                    className={`w-full rounded object-cover shadow-lg ${isLargeRow ? 'h-[300px]' : 'h-[270px]'}`}
+                                    src={getImageUrl(isLargeRow ? movie.poster_path : movie.backdrop_path || movie.poster_path)}
                                     alt={movie.title}
+                                    loading="lazy"
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.style.display = "none"; // Hide broken images? Or show placeholder?
-                                        // e.target.src = "https://via.placeholder.com/160x240?text=No+Image"; 
+                                        e.target.style.display = "none";
                                     }}
                                 />
-                                {/* Fallback container if image hidden */}
-                                <div className="absolute inset-0 bg-gray-800 flex items-center justify-center -z-10 rounded">
-                                    <span className="text-xs text-center p-2">{movie.title}</span>
-                                </div>
+                                {/* Overlay/fallback if needed */}
 
                                 <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-b">
-                                    <p className="text-xs font-semibold truncate text-center text-white">{movie.title}</p>
+                                    <p className="text-sm font-semibold truncate text-center text-white drop-shadow-md">{movie.title}</p>
                                 </div>
                             </div>
                         ))
                     ) : (
                         <div className="flex items-center justify-center w-full h-40 text-gray-500">
-                            <p>No movies available</p>
+                            <p>Loading...</p>
                         </div>
                     )}
                 </div>
