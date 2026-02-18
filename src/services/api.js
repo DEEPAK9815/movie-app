@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_KEY = import.meta.env.VITE_WATCHMODE_API_KEY;
+const API_KEY = import.meta.env.VITE_WATCHMODE_API_KEY || "M06GchJwokD8jWJFa8NvLzvdfXRG3lk7cK1Qr8xF";
 const BASE_URL = 'https://api.watchmode.com/v1/';
 
 const api = axios.create({
@@ -39,7 +39,7 @@ export const getTopRated = async () => {
     try {
         const response = await api.get('list-titles/', {
             params: {
-                sort_by: 'user_rating_desc',
+                sort_by: 'popularity_desc', // fallback as user_rating_desc is not supported
                 types: 'movie',
                 limit: 20
             }

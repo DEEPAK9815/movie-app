@@ -1,86 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Row = ({ title, fetchFunction, isLargeRow = false }) => {
     const [movies, setMovies] = useState([]);
-    const [scrollX, setScrollX] = useState(0);
+    const rowRef = useRef(null);
 
     useEffect(() => {
         async function fetchData() {
-            const request = await fetchFunction();
-            // Watchmode returns { titles: [...] } or { results: [...] } depending on endpoint
-            // My api.js returns response.data directly.
-            // verify check_api.cjs output: { titles: [...] }
-            if (request && request.titles) {
-                setMovies(request.titles);
-            } else if (request && Array.isArray(request)) {
-                // specific lists might return array?
-                setMovies(request);
+            try {
+                const request = await fetchFunction();
+                if (request && request.titles) {
+                    setMovies(request.titles);
+                } else if (request && Array.isArray(request)) {
+                    setMovies(request);
+                }
+            } catch (error) {
+                console.error("Failed to fetch movies for row:", title, error);
             }
-            return request;
         }
         fetchData();
-    }, [fetchFunction]);
+    }, [fetchFunction, title]);
 
     const getImageUrl = (id) => {
-        // Construct Watchmode poster URL
-        // Assumption: 8 digit zero padded ID
-        // Pattern: https://cdn.watchmode.com/posters/0{id}_poster_w342.jpg
-        // If ID is 1234567 (7 digits), pad to 8 -> 01234567
-        const paddedId = id.toString().padStart(7, '0'); // Wait, wait. "01550054" is 8 chars. ID=1550054 (7 chars). So padStart(7, '0') returns 1550054. I need padStart(?, '0')?
-        // Ah, the prefix is `0`. 
-        // Let's look at `01884698` (ID 1884698 - 7 digits).
-        // It seems they prepend '0' if it's 7 digits? Or maybe it's always 8 digits long string?
-        // Let's assume standard behavior: `id.toString().padStart(7, '0')` might not be enough context.
-        // Let's try appending '0' manually if length is 7?
-        // Actually, the example `01550054` suggests a leading zero.
-        // Let's just use `id` and try.
-        // Actually best bet: https://cdn.watchmode.com/posters/ + id + _poster_w342.jpg ? 
-        // No, check check_api value: "https://cdn.watchmode.com/posters/01884698_poster_w342.jpg". There IS a leading zero.
-        // Safe bet: `0${id}`? 
-        // What if ID is 6 digits?
-        // Let's use `.padStart(?, '0')`?
-        // The safest guess for "01884698" from "1884698" is it's just prepending '0'.
-        // Wait, TMDB IDs don't follow this. These are Watchmode IDs.
+        // Watchmode poster image pattern
         return `https://cdn.watchmode.com/posters/0${id}_poster_w342.jpg`;
     };
 
     const scroll = (offset) => {
-        const element = document.getElementById(title);
-        element.scrollLeft += offset;
+        if (rowRef.current) {
+            rowRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+        }
     }
 
     return (
-        <div className="text-white ml-5">
+        <div className="text-white ml-5 relative group my-4">
             <h2 className="text-xl font-bold mb-4">{title}</h2>
-            <div className="relative group">
+
+            <div className="relative group/row">
+                {/* Left Scroll Button */}
                 <div
-                    id={title}
-                    className="flex overflow-x-scroll scrollbar-hide scroll-smooth space-x-4 p-4"
+                    className={`absolute left-0 top-0 bottom-0 z-20 w-12 bg-black/50 hover:bg-black/70 flex items-center justify-center cursor-pointer opacity-0 group-hover/row:opacity-100 transition-opacity duration-300 ${movies.length === 0 ? 'hidden' : ''}`}
+                    onClick={() => scroll(-500)}
+                >
+                    <ChevronLeft className="text-white" size={40} />
+                </div>
+
+                <div
+                    ref={rowRef}
+                    className="flex overflow-x-scroll scrollbar-hide scroll-smooth space-x-4 p-4 pl-1"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {movies.map(movie => (
-                        <div
-                            key={movie.id}
-                            className={`flex-none relative transition-transform duration-300 hover:scale-105 cursor-pointer ${isLargeRow ? 'w-[180px]' : 'w-[160px]'}`}
-                        >
-                            <img
-                                className={`w-full rounded object-cover ${isLargeRow ? 'h-[270px]' : 'h-[240px]'}`}
-                                src={getImageUrl(movie.id)}
-                                alt={movie.title}
-                                onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = "https://via.placeholder.com/160x240?text=No+Image"; // Fallback
-                                }}
-                            />
-                            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                <p className="text-xs font-semibold truncate">{movie.title}</p>
+                    {movies.length > 0 ? (
+                        movies.map(movie => (
+                            <div
+                                key={movie.id}
+                                className={`flex-none relative transition-transform duration-300 hover:scale-110 cursor-pointer ${isLargeRow ? 'w-[180px]' : 'w-[160px]'} hover:z-10`}
+                            >
+                                <img
+                                    className={`w-full rounded object-cover shadow-lg ${isLargeRow ? 'h-[270px]' : 'h-[240px]'}`}
+                                    src={getImageUrl(movie.id)}
+                                    alt={movie.title}
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.style.display = "none"; // Hide broken images? Or show placeholder?
+                                        // e.target.src = "https://via.placeholder.com/160x240?text=No+Image"; 
+                                    }}
+                                />
+                                {/* Fallback container if image hidden */}
+                                <div className="absolute inset-0 bg-gray-800 flex items-center justify-center -z-10 rounded">
+                                    <span className="text-xs text-center p-2">{movie.title}</span>
+                                </div>
+
+                                <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-b">
+                                    <p className="text-xs font-semibold truncate text-center text-white">{movie.title}</p>
+                                </div>
                             </div>
+                        ))
+                    ) : (
+                        <div className="flex items-center justify-center w-full h-40 text-gray-500">
+                            <p>No movies available</p>
                         </div>
-                    ))}
+                    )}
                 </div>
-                {/* Scroll Buttons - Visible on Hover (Custom implementation or use group-hover) */}
-                {/* Simplified for now, native scroll works well */}
+
+                {/* Right Scroll Button */}
+                <div
+                    className={`absolute right-0 top-0 bottom-0 z-20 w-12 bg-black/50 hover:bg-black/70 flex items-center justify-center cursor-pointer opacity-0 group-hover/row:opacity-100 transition-opacity duration-300 ${movies.length === 0 ? 'hidden' : ''}`}
+                    onClick={() => scroll(500)}
+                >
+                    <ChevronRight className="text-white" size={40} />
+                </div>
             </div>
         </div>
     );

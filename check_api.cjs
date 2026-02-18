@@ -4,23 +4,34 @@ const API_KEY = 'M06GchJwokD8jWJFa8NvLzvdfXRG3lk7cK1Qr8xF';
 
 async function check() {
     try {
-        // Test ID: 1550054 (another one from similar)
-        const id = 1550054;
-        const constructUrl = `https://cdn.watchmode.com/posters/0${id}_poster_w342.jpg`; // Trying 8 digits?
-        console.log(`Constructed URL: ${constructUrl}`);
-
-        try {
-            await axios.head(constructUrl);
-            console.log("Constructed URL is VALID (200 OK)");
-        } catch (e) {
-            console.log("Constructed URL is INVALID: " + e.message);
+        console.log("Checking Trending (types='movie', sort_by='popularity_desc')...");
+        const trendingResponse = await axios.get(`https://api.watchmode.com/v1/list-titles/?apiKey=${API_KEY}`, {
+            params: {
+                sort_by: 'popularity_desc',
+                types: 'movie',
+                limit: 5
+            }
+        });
+        console.log("Trending count: " + trendingResponse.data.titles.length);
+        if (trendingResponse.data.titles.length > 0) {
+            console.log("Sample Trending: " + JSON.stringify(trendingResponse.data.titles[0], null, 2));
         }
 
-        const response = await axios.get(`https://api.watchmode.com/v1/title/${id}/details/?apiKey=${API_KEY}`);
-        console.log("Actual Poster: " + response.data.poster);
-        console.log("Actual Backdrop: " + response.data.backdrop);
+        console.log("\nChecking Top Rated (types='movie', sort_by='user_rating_desc')...");
+        const topRatedResponse = await axios.get(`https://api.watchmode.com/v1/list-titles/?apiKey=${API_KEY}`, {
+            params: {
+                sort_by: 'user_rating_desc',
+                types: 'movie',
+                limit: 5
+            }
+        });
+        console.log("Top Rated count: " + topRatedResponse.data.titles.length);
+        if (topRatedResponse.data.titles.length > 0) {
+            console.log("Sample Top Rated: " + JSON.stringify(topRatedResponse.data.titles[0], null, 2));
+        }
+
     } catch (error) {
-        console.error(error);
+        console.error("API Error: ", error.response ? error.response.data : error.message);
     }
 }
 
