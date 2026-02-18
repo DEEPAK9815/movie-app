@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Bell, User } from 'lucide-react';
-import logo from '../assets/netflix-logo.png'; // We might need a logo or use text
 
 const Navbar = () => {
     const [show, handleShow] = useState(false);
