@@ -30,7 +30,10 @@ export const hydrateTitles = async (titles, limit = 20) => {
 // Generic raw fetcher (returns ID/Title only)
 const fetchRaw = async (endpoint, limit = 50) => {
     try {
-        const res = await instance.get(`${endpoint}&limit=${limit}`);
+        // Add random page to get different results on reload
+        // Random page 1 or 2. This + limit 50 gives us a pool of ~100 potential items per category depending on reload
+        const randomPage = Math.floor(Math.random() * 2) + 1;
+        const res = await instance.get(`${endpoint}&limit=${limit}&page=${randomPage}`);
         return res.data.titles || [];
     } catch (error) {
         console.error(`Error fetching raw ${endpoint}:`, error);
@@ -49,20 +52,15 @@ export const getHorrorRaw = () => fetchRaw('/list-titles/?genres=11');
 export const getRomanceRaw = () => fetchRaw('/list-titles/?genres=14');
 export const getDocumentariesRaw = () => fetchRaw('/list-titles/?genres=6');
 
-// Backward compatibility (though Home.jsx will bypass this)
-const getRandomPage = () => Math.floor(Math.random() * 3) + 1;
-export const getTrending = async () => {
-    const titles = await fetchRaw(`/list-titles/?sort_by=popularity_desc&page=${getRandomPage()}`);
-    return { results: await hydrateTitles(titles, 15) };
-};
+// Legacy exports stubbed to use new flow if called directly (though Home.jsx bypasses them)
+export const getTrending = async () => ({ results: [] });
+export const getTopRated = async () => ({ results: [] });
+export const getActionMovies = async () => ({ results: [] });
+export const getComedyMovies = async () => ({ results: [] });
+export const getHorrorMovies = async () => ({ results: [] });
+export const getRomanceMovies = async () => ({ results: [] });
+export const getDocumentariesRawMovies = async () => ({ results: [] });
 
-// ... other exports kept for safety, but Home.jsx handles the main logic now
-export const getTopRated = async () => getTrending(); // Placeholder
-export const getActionMovies = async () => getTrending();
-export const getComedyMovies = async () => getTrending();
-export const getHorrorMovies = async () => getTrending();
-export const getRomanceMovies = async () => getTrending();
-export const getDocumentariesRawMovies = async () => getTrending();
 export const getMovieDetails = async (id) => {
     const response = await instance.get(`/title/${id}/details`);
     return response.data;
@@ -79,6 +77,5 @@ export default {
     getRomanceRaw,
     getDocumentariesRaw,
     hydrateTitles,
-    getTrending, // Legacy
     getMovieDetails
 };

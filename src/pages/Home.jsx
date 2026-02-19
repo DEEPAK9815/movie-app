@@ -48,13 +48,15 @@ const Home = () => {
 
                 // 2. Global Deduplication
                 const seenIds = new Set();
+                const seenTitles = new Set(); // Prevent same movie title (even if different ID)
 
                 // Helper to extract unique items for a list
                 const processList = (list, count = 20) => {
                     const unique = [];
                     for (const item of list) {
-                        if (!seenIds.has(item.id)) {
+                        if (!seenIds.has(item.id) && !seenTitles.has(item.title)) {
                             seenIds.add(item.id);
+                            seenTitles.add(item.title);
                             unique.push(item);
                             if (unique.length === count) break;
                         }
@@ -62,7 +64,7 @@ const Home = () => {
                     return unique;
                 };
 
-                const uniqueTrending = processList(trendingRaw, 25); // Banner + Row
+                const uniqueTrending = processList(trendingRaw, 25);
                 const uniqueTopRated = processList(topRatedRaw, 25);
                 const uniqueAction = processList(actionRaw, 25);
                 const uniqueAdventure = processList(adventureRaw, 25);
@@ -132,7 +134,6 @@ const Home = () => {
         ? data.trending[Math.floor(Math.random() * data.trending.length)]
         : null;
 
-    // We can pass the full object or just wrap it in results structure for compatibility if banner expects it
     const bannerFetchStub = () => ({ results: data.trending });
 
     return (
