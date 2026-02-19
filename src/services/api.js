@@ -11,7 +11,7 @@ const instance = axios.create({
 });
 
 // Helper to hydrate a list of titles with details (images)
-const hydrateTitles = async (titles, limit = 12) => {
+export const hydrateTitles = async (titles, limit = 20) => {
     const subset = titles.slice(0, limit);
 
     const detailsPromises = subset.map(title =>
@@ -27,73 +27,58 @@ const hydrateTitles = async (titles, limit = 12) => {
     return details.filter(movie => movie !== null);
 };
 
-// Return a random page number between 1 and 3 to vary results
+// Generic raw fetcher (returns ID/Title only)
+const fetchRaw = async (endpoint, limit = 50) => {
+    try {
+        const res = await instance.get(`${endpoint}&limit=${limit}`);
+        return res.data.titles || [];
+    } catch (error) {
+        console.error(`Error fetching raw ${endpoint}:`, error);
+        return [];
+    }
+};
+
+// Fetch raw lists
+export const getTrendingRaw = () => fetchRaw('/list-titles/?sort_by=popularity_desc');
+export const getTopRatedRaw = () => fetchRaw('/list-titles/?sort_by=user_rating_desc');
+export const getActionRaw = () => fetchRaw('/list-titles/?genres=1');
+export const getAdventureRaw = () => fetchRaw('/list-titles/?genres=2');
+export const getComedyRaw = () => fetchRaw('/list-titles/?genres=4');
+export const getDramaRaw = () => fetchRaw('/list-titles/?genres=7');
+export const getHorrorRaw = () => fetchRaw('/list-titles/?genres=11');
+export const getRomanceRaw = () => fetchRaw('/list-titles/?genres=14');
+export const getDocumentariesRaw = () => fetchRaw('/list-titles/?genres=6');
+
+// Backward compatibility (though Home.jsx will bypass this)
 const getRandomPage = () => Math.floor(Math.random() * 3) + 1;
-
 export const getTrending = async () => {
-    try {
-        const response = await instance.get(`/list-titles/?sort_by=popularity_desc&limit=15&page=${getRandomPage()}`);
-        const hydrated = await hydrateTitles(response.data.titles);
-        return { results: hydrated };
-    } catch (error) {
-        console.error("Error fetching trending:", error);
-        return { results: [] };
-    }
+    const titles = await fetchRaw(`/list-titles/?sort_by=popularity_desc&page=${getRandomPage()}`);
+    return { results: await hydrateTitles(titles, 15) };
 };
 
-export const getTopRated = async () => {
-    try {
-        const response = await instance.get(`/list-titles/?sort_by=user_rating_desc&limit=15&page=${getRandomPage()}`);
-        const hydrated = await hydrateTitles(response.data.titles);
-        return { results: hydrated };
-    } catch (error) {
-        console.error("Error fetching top rated:", error);
-        return { results: [] };
-    }
-};
-
-export const getActionMovies = async () => {
-    const response = await instance.get(`/list-titles/?genres=1&limit=15&page=${getRandomPage()}`);
-    const hydrated = await hydrateTitles(response.data.titles);
-    return { results: hydrated };
-};
-
-export const getComedyMovies = async () => {
-    const response = await instance.get(`/list-titles/?genres=4&limit=15&page=${getRandomPage()}`);
-    const hydrated = await hydrateTitles(response.data.titles);
-    return { results: hydrated };
-};
-
-export const getHorrorMovies = async () => {
-    const response = await instance.get(`/list-titles/?genres=11&limit=15&page=${getRandomPage()}`);
-    const hydrated = await hydrateTitles(response.data.titles);
-    return { results: hydrated };
-};
-
-export const getRomanceMovies = async () => {
-    const response = await instance.get(`/list-titles/?genres=14&limit=15&page=${getRandomPage()}`);
-    const hydrated = await hydrateTitles(response.data.titles);
-    return { results: hydrated };
-};
-
-export const getDocumentaries = async () => {
-    const response = await instance.get(`/list-titles/?genres=6&limit=15&page=${getRandomPage()}`);
-    const hydrated = await hydrateTitles(response.data.titles);
-    return { results: hydrated };
-};
-
+// ... other exports kept for safety, but Home.jsx handles the main logic now
+export const getTopRated = async () => getTrending(); // Placeholder
+export const getActionMovies = async () => getTrending();
+export const getComedyMovies = async () => getTrending();
+export const getHorrorMovies = async () => getTrending();
+export const getRomanceMovies = async () => getTrending();
+export const getDocumentariesRawMovies = async () => getTrending();
 export const getMovieDetails = async (id) => {
     const response = await instance.get(`/title/${id}/details`);
     return response.data;
 };
 
 export default {
-    getTrending,
-    getTopRated,
-    getActionMovies,
-    getComedyMovies,
-    getHorrorMovies,
-    getRomanceMovies,
-    getDocumentaries,
+    getTrendingRaw,
+    getTopRatedRaw,
+    getActionRaw,
+    getAdventureRaw,
+    getComedyRaw,
+    getDramaRaw,
+    getHorrorRaw,
+    getRomanceRaw,
+    getDocumentariesRaw,
+    hydrateTitles,
+    getTrending, // Legacy
     getMovieDetails
 };

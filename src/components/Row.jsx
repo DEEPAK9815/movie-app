@@ -1,24 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const Row = ({ title, fetchFunction, isLargeRow = false, onMovieClick }) => {
-    const [movies, setMovies] = useState([]);
+const Row = ({ title, fetchFunction, movies: propMovies, isLargeRow = false, onMovieClick }) => {
+    const [movies, setMovies] = useState(propMovies || []);
     const rowRef = useRef(null);
     const [isHovered, setIsHovered] = useState(false);
 
     useEffect(() => {
-        async function fetchData() {
-            try {
-                const request = await fetchFunction();
-                if (request && request.results) {
-                    setMovies(request.results);
-                }
-            } catch (error) {
-                console.error("Failed to fetch movies for row:", title, error);
-            }
+        if (propMovies) {
+            setMovies(propMovies);
+            return;
         }
-        fetchData();
-    }, [fetchFunction, title]);
+        // Fallback for legacy usage
+        if (fetchFunction) {
+            async function fetchData() {
+                try {
+                    const request = await fetchFunction();
+                    if (request && request.results) {
+                        setMovies(request.results);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch movies for row:", title, error);
+                }
+            }
+            fetchData();
+        }
+    }, [fetchFunction, title, propMovies]);
 
     const scroll = (offset) => {
         if (rowRef.current) {
