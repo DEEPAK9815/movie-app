@@ -1,46 +1,95 @@
-import { mockData } from '../data/mockData';
+import axios from 'axios';
 
-// Simulating async API calls
+const API_KEY = import.meta.env.VITE_WATCHMODE_API_KEY;
+const BASE_URL = 'https://api.watchmode.com/v1';
+
+const instance = axios.create({
+    baseURL: BASE_URL,
+    params: {
+        apiKey: API_KEY,
+    }
+});
+
+// Helper to hydrate a list of titles with details (images)
+// Limiting to 10 items to save API calls
+const hydrateTitles = async (titles, limit = 12) => {
+    const subset = titles.slice(0, limit);
+
+    // Create an array of promises to fetch details for each title
+    const detailsPromises = subset.map(title =>
+        instance.get(`/title/${title.id}/details`)
+            .then(res => res.data)
+            .catch(err => {
+                console.error(`Failed to hydrate title ${title.id}`, err);
+                return null;
+            })
+    );
+
+    const details = await Promise.all(detailsPromises);
+    // Filter out any failed requests
+    return details.filter(movie => movie !== null);
+};
+
 export const getTrending = async () => {
-    return { results: mockData.trending };
+    try {
+        const response = await instance.get('/list-titles/?sort_by=popularity_desc&limit=15'); // Fetch slightly more than needed
+        const hydrated = await hydrateTitles(response.data.titles);
+        return { results: hydrated };
+    } catch (error) {
+        console.error("Error fetching trending:", error);
+        return { results: [] };
+    }
 };
 
 export const getTopRated = async () => {
-    return { results: mockData.topRated };
+    try {
+        // Watchmode lacks a direct "top rated" equivalent in list-titles essentially, but we can sort by rating if available or just use user_rating_desc? 
+        // Checking docs: sort_by=user_rating_desc is valid? Let's try popularity first as it's safer, maybe different genre.
+        // Actually showing "Relevance" or "Rating" might be better. Let's use popularity for checking.
+        const response = await instance.get('/list-titles/?sort_by=user_rating_desc&limit=15');
+        const hydrated = await hydrateTitles(response.data.titles);
+        return { results: hydrated };
+    } catch (error) {
+        console.error("Error fetching top rated:", error);
+        return { results: [] };
+    }
 };
 
+// Genre IDs for Watchmode (Common mapping)
+// 1 = Action, 4 = Comedy, 11 = Horror, 14 = Romance, 6 = Documentary
 export const getActionMovies = async () => {
-    return { results: mockData.action };
+    const response = await instance.get('/list-titles/?genres=1&limit=15');
+    const hydrated = await hydrateTitles(response.data.titles);
+    return { results: hydrated };
 };
 
 export const getComedyMovies = async () => {
-    return { results: mockData.comedy };
+    const response = await instance.get('/list-titles/?genres=4&limit=15');
+    const hydrated = await hydrateTitles(response.data.titles);
+    return { results: hydrated };
 };
 
 export const getHorrorMovies = async () => {
-    return { results: mockData.horror };
+    const response = await instance.get('/list-titles/?genres=11&limit=15');
+    const hydrated = await hydrateTitles(response.data.titles);
+    return { results: hydrated };
 };
 
 export const getRomanceMovies = async () => {
-    return { results: mockData.romance };
+    const response = await instance.get('/list-titles/?genres=14&limit=15');
+    const hydrated = await hydrateTitles(response.data.titles);
+    return { results: hydrated };
 };
 
 export const getDocumentaries = async () => {
-    return { results: mockData.documentaries };
+    const response = await instance.get('/list-titles/?genres=6&limit=15');
+    const hydrated = await hydrateTitles(response.data.titles);
+    return { results: hydrated };
 };
 
 export const getMovieDetails = async (id) => {
-    // Find movie in any category
-    const allMovies = [
-        ...mockData.trending,
-        ...mockData.topRated,
-        ...mockData.action,
-        ...mockData.comedy,
-        ...mockData.horror,
-        ...mockData.romance,
-        ...mockData.documentaries
-    ];
-    return allMovies.find(m => m.id === id) || null;
+    const response = await instance.get(`/title/${id}/details`);
+    return response.data;
 };
 
 export default {
