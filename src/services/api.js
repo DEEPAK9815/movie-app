@@ -11,11 +11,9 @@ const instance = axios.create({
 });
 
 // Helper to hydrate a list of titles with details (images)
-// Limiting to 10 items to save API calls
 const hydrateTitles = async (titles, limit = 12) => {
     const subset = titles.slice(0, limit);
 
-    // Create an array of promises to fetch details for each title
     const detailsPromises = subset.map(title =>
         instance.get(`/title/${title.id}/details`)
             .then(res => res.data)
@@ -26,13 +24,15 @@ const hydrateTitles = async (titles, limit = 12) => {
     );
 
     const details = await Promise.all(detailsPromises);
-    // Filter out any failed requests
     return details.filter(movie => movie !== null);
 };
 
+// Return a random page number between 1 and 3 to vary results
+const getRandomPage = () => Math.floor(Math.random() * 3) + 1;
+
 export const getTrending = async () => {
     try {
-        const response = await instance.get('/list-titles/?sort_by=popularity_desc&limit=15'); // Fetch slightly more than needed
+        const response = await instance.get(`/list-titles/?sort_by=popularity_desc&limit=15&page=${getRandomPage()}`);
         const hydrated = await hydrateTitles(response.data.titles);
         return { results: hydrated };
     } catch (error) {
@@ -43,10 +43,7 @@ export const getTrending = async () => {
 
 export const getTopRated = async () => {
     try {
-        // Watchmode lacks a direct "top rated" equivalent in list-titles essentially, but we can sort by rating if available or just use user_rating_desc? 
-        // Checking docs: sort_by=user_rating_desc is valid? Let's try popularity first as it's safer, maybe different genre.
-        // Actually showing "Relevance" or "Rating" might be better. Let's use popularity for checking.
-        const response = await instance.get('/list-titles/?sort_by=user_rating_desc&limit=15');
+        const response = await instance.get(`/list-titles/?sort_by=user_rating_desc&limit=15&page=${getRandomPage()}`);
         const hydrated = await hydrateTitles(response.data.titles);
         return { results: hydrated };
     } catch (error) {
@@ -55,34 +52,32 @@ export const getTopRated = async () => {
     }
 };
 
-// Genre IDs for Watchmode (Common mapping)
-// 1 = Action, 4 = Comedy, 11 = Horror, 14 = Romance, 6 = Documentary
 export const getActionMovies = async () => {
-    const response = await instance.get('/list-titles/?genres=1&limit=15');
+    const response = await instance.get(`/list-titles/?genres=1&limit=15&page=${getRandomPage()}`);
     const hydrated = await hydrateTitles(response.data.titles);
     return { results: hydrated };
 };
 
 export const getComedyMovies = async () => {
-    const response = await instance.get('/list-titles/?genres=4&limit=15');
+    const response = await instance.get(`/list-titles/?genres=4&limit=15&page=${getRandomPage()}`);
     const hydrated = await hydrateTitles(response.data.titles);
     return { results: hydrated };
 };
 
 export const getHorrorMovies = async () => {
-    const response = await instance.get('/list-titles/?genres=11&limit=15');
+    const response = await instance.get(`/list-titles/?genres=11&limit=15&page=${getRandomPage()}`);
     const hydrated = await hydrateTitles(response.data.titles);
     return { results: hydrated };
 };
 
 export const getRomanceMovies = async () => {
-    const response = await instance.get('/list-titles/?genres=14&limit=15');
+    const response = await instance.get(`/list-titles/?genres=14&limit=15&page=${getRandomPage()}`);
     const hydrated = await hydrateTitles(response.data.titles);
     return { results: hydrated };
 };
 
 export const getDocumentaries = async () => {
-    const response = await instance.get('/list-titles/?genres=6&limit=15');
+    const response = await instance.get(`/list-titles/?genres=6&limit=15&page=${getRandomPage()}`);
     const hydrated = await hydrateTitles(response.data.titles);
     return { results: hydrated };
 };

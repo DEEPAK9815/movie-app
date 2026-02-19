@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const Row = ({ title, fetchFunction, isLargeRow = false }) => {
+const Row = ({ title, fetchFunction, isLargeRow = false, onMovieClick }) => {
     const [movies, setMovies] = useState([]);
     const rowRef = useRef(null);
     const [isHovered, setIsHovered] = useState(false);
@@ -51,6 +51,7 @@ const Row = ({ title, fetchFunction, isLargeRow = false }) => {
                         movies.map(movie => (
                             <div
                                 key={movie.id}
+                                onClick={() => onMovieClick && onMovieClick(movie)}
                                 className={`flex-none relative transition-all duration-300 hover:scale-105 hover:z-30 cursor-pointer ${isLargeRow ? 'w-[160px] md:w-[220px]' : 'w-[140px] md:w-[200px]'}`}
                             >
                                 <img

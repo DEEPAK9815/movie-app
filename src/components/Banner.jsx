@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Info } from 'lucide-react';
 
-const Banner = ({ fetchFunction }) => {
+const Banner = ({ fetchFunction, onMovieSelect }) => {
     const [movie, setMovie] = useState(null);
 
     useEffect(() => {
@@ -43,13 +43,13 @@ const Banner = ({ fetchFunction }) => {
 
                 <div className="flex gap-4 my-6">
                     <button
-                        onClick={() => alert(`Playing ${movie?.title}`)}
+                        onClick={() => onMovieSelect ? onMovieSelect(movie) : null}
                         className="flex items-center gap-2 bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded hover:bg-opacity-80 transition cursor-pointer font-bold text-lg md:text-xl"
                     >
                         <Play className="fill-black w-6 h-6 md:w-7 md:h-7" /> Play
                     </button>
                     <button
-                        onClick={() => alert(`More info about ${movie?.title}`)}
+                        onClick={() => onMovieSelect ? onMovieSelect(movie) : null}
                         className="flex items-center gap-2 bg-[rgba(109,109,110,0.7)] text-white px-6 md:px-8 py-2 md:py-3 rounded hover:bg-[rgba(109,109,110,0.4)] transition cursor-pointer font-bold text-lg md:text-xl"
                     >
                         <Info className="w-6 h-6 md:w-7 md:h-7" /> More Info
